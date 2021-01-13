@@ -2,6 +2,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Data;
+using API.DTOs;
+using API.Interfaces;
+using AutoMapper;
 using DatingApp.API.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,31 +12,32 @@ using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers
 {
+    [Authorize]
     public class UsersController : BaseApiController
     {
-        private readonly DataContext _context;
-        public UsersController(DataContext context)
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
+        public UsersController(IUserRepository userRepository, IMapper mapper)
         {
-            _context = context;
+            this._mapper = mapper;
+            this._userRepository = userRepository;
         }
 
         [HttpGet]
-        [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<AppUser>>> GetUsers() 
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUsers()
         {
-            var users = await _context.Users.ToListAsync();
+            var users = await _userRepository.GetMembersAsync();
 
-            return users;
+            return Ok(users);
         }
 
-        // api/users/3
-        [Authorize]
-        [HttpGet("{id}")]
-        public async Task<ActionResult <AppUser>> GetUsers(int id) 
-        {
-            var user = await _context.Users.FindAsync(id);
 
-            return user;
+        [HttpGet("{username}")]
+        public async Task<ActionResult<MemberDto>> GetUsers(string username)
+        {
+            var user = await _userRepository.GetMemberAsync(username);
+
+            return _mapper.Map<MemberDto>(user);
         }
     }
 }
